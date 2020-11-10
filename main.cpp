@@ -106,6 +106,11 @@ int main()
         if(i%100 == 0){
             auto vec = ef.getBars("300661.SZSE");
             std::cout << vec.size()<< std::endl;
+            // std::cout << vec.back()->date<< std::endl;
+            // auto bar = vec.back();
+            auto pt = vec.end()-1;
+            auto bar = *pt;
+            printf("|date: %zd|time: %zd|minute: %zd|UptickVolume:%d|DowntickVolume:%d|\n", bar->date, bar->time, bar->minute,bar->UptickVolume,bar->DowntickVolume);
         }
     }
     for(EquityMinuteBarPtr ptr: ef.getBars("300661.SZSE"))

@@ -41,7 +41,7 @@ std::vector<EquityMinuteBarPtr> EquityFeatures::getBars(std::string vt_symbol)
         bar = barPtr;
         bar->vt_symbol = vt_symbol;
         bar->date = trade.date;
-        bar->time = min_num;
+        bar->minute = min_num;
         auto bar_map_idx = _currBars.find(vt_symbol);
         if(bar_map_idx ==_currBars.end()){
             std::unordered_map<size_t,EquityMinuteBarPtr> bar_kv;
@@ -53,6 +53,8 @@ std::vector<EquityMinuteBarPtr> EquityFeatures::getBars(std::string vt_symbol)
         }
         if(_preMBar==NULL) _preMBar = bar;
     }
+    
+    bar->time = trade.time;
     if (_lastTradePrice != 0.){
         if(trade.trade_price > _lastTradePrice)
         {
