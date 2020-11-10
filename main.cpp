@@ -1,5 +1,6 @@
 #include <iterator>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -7,26 +8,54 @@
 #include <map>
 // #include "rapidcsv.h"
 
-# include "csv.hpp"
-# include "features.h"
+#include "csv.hpp"
+#include "features.h"
 
 using namespace csv;
 using namespace std;
 
-std::vector<int> parse_array(const string& strArray){
-    auto substr = strArray.substr(1,strArray.size() -2);
+std::vector<int> parse_array(const string &strArray)
+{
+    auto substr = strArray.substr(1, strArray.size() - 2);
     stringstream s_stream(substr);
     vector<int> res;
     while (s_stream.good())
     {
-        string valStr; 
+        string valStr;
         getline(s_stream, valStr, ',');
         if (!valStr.empty())
             res.push_back(std::stoi(valStr));
     }
     return res;
-
 }
+
+std::string secId2vtSymbol(int secId){
+    std::stringstream secStr;
+    secStr << setw(6) << setfill('0') << secId;
+    if(secStr.str().substr(0,1) == "0" || secStr.str().substr(0,1) == "3")
+    {
+        return secStr.str() + ".SZSE";
+    }else
+    {
+        return secStr.str() + ".SSE";
+    }
+}
+
+void parseEquityTrade(CSVRow &row, EquityTrade &trade)
+{
+    auto trade_bs_flag =  row["trade_bs_flag"].get<std::string>();
+    if(trade_bs_flag =="B" || trade_bs_flag == "S")
+    {
+        auto securityid = row["securityid"].get<int>();
+        trade.vt_symbol = secId2vtSymbol(securityid);
+        trade.trade_price = row["trade_price"].get<int>() / 10000.;
+        trade.trade_volume = row["trade_volume"].get<int>();
+        trade.trade_bs_flag = trade_bs_flag;
+        trade.date = row["date"].get<size_t>();
+        trade.time = row["time"].get<size_t>();
+    }
+}
+
 // int main(){
 //     CSVReader reader("d:\\temp_data\\hq-szl2-000001-tick-20201012152258606.csv");
 
@@ -50,31 +79,39 @@ std::vector<int> parse_array(const string& strArray){
 //     cout << n << endl;
 // }
 
-EquityTrade parseEquityTrade(CSVRow & row)
-{   
-    EquityTrade et;
-    et.trade_price = row["trade_price"].get<int>()/10000.;
-    et.trade_volume = row["trade_volume"].get<int>();
-    et.date = row["date"].get<int>();
-    et.time = row["time"].get<int>();
-    return et;
-}
-
-
-int main(){
-    CSVReader reader("d:\\temp_data\\hq-szl2-300122-trade-20200805141001722.csv");
+int main()
+{
+    CSVReader reader("d:\\temp_data\\hq-szl2-300661-trade-20200731173248172.csv");
 
     EquityFeatures ef;
-
-    for (CSVRow& row: reader) { // Input iterator
+    FeatureParams fparams;
+    fparams.freq = "1m";
+    ef.setParams(fparams);
+    int i = 0;
+    for (CSVRow &row : reader)
+    { // Input iterator
         // for (CSVField& field: row) {
         //     // By default, get<>() produces a std::string.
         //     // A more efficient get<string_view>() is also available, where the resulting
         //     // string_view is valid as long as the parent CSVRow is alive
         //     std::cout << field.get<string_view>() << endl;
         // }
-        auto trade = parseEquityTrade(row);
-        ef.onTrade(trade);
-}
+        i+=1;
+        EquityTrade trade;
+        parseEquityTrade(row, trade);
+        if(trade.trade_volume!=0)
+        {
+            ef.onTrade(trade);
+        }
+        if(i%100 == 0){
+            auto vec = ef.getBars("300661.SZSE");
+            std::cout << vec.size()<< std::endl;
+        }
+    }
+    for(EquityMinuteBarPtr ptr: ef.getBars("300661.SZSE"))
+    {
+        std::cout <<ptr->vt_symbol << ' ' << ptr->RepeatDowntickVolume << ' ' << std::endl;
+    };
+    
     return 0;
 }

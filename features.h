@@ -3,132 +3,126 @@
 #include <unordered_map>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 struct Tick
 {
     std::string vt_symbol;
-    int date;
-    int time;
+    size_t date;
+    size_t time;
     double preclose;
     double last;
-    int total_volume_trade;
-    int total_value_trade;
+    size_t total_volume_trade;
+    size_t total_value_trade;
 };
 
 struct EquityTick : Tick
 {
     std::vector<double> bid_prices;
-    std::vector<int> bid_volumes;
+    std::vector<size_t> bid_volumes;
     std::vector<double> ask_prices;
-    std::vector<int> ask_volumes;
-
+    std::vector<size_t> ask_volumes;
 };
 
 struct Bar
 {
-    int date;
-    int time;
+    std::string vt_symbol;
+    size_t date;
+    size_t time;
     double open;
     double high;
     double low;
     double close;
-    int volume;
+    size_t volume;
 };
 
 struct EquityMinuteBar : Bar
 {
-    int minute;
+    size_t minute;
     // trade
-    int UptickVolume = 0;
-    int DowntickVolume = 0;
-    int RepeatUptickVolume = 0;
-    int RepeatDowntickVolume = 0;
-
+    size_t UptickVolume = 0;
+    size_t DowntickVolume = 0;
+    size_t RepeatUptickVolume = 0;
+    size_t RepeatDowntickVolume = 0;
 };
 
 struct Trade
 {
     std::string vt_symbol;
-    int date;
-    int time; 
-    double trade_price;
-    double trade_volume;
-    char* trade_bs_flag;
-    int trade_sell_no;
-    int trade_buy_no;
+    size_t date;
+    size_t time;
+    double trade_price = 0;
+    size_t trade_volume = 0;
+    std::string trade_bs_flag;
+    size_t trade_sell_no;
+    size_t trade_buy_no;
 };
 
-struct EquityTrade:Trade
+struct EquityTrade : Trade
 {
-    
 };
 
 struct Order
 {
-    
 };
-
 
 struct FeatureParams
 {
-  char* freq = "1m";  
+    char *freq = "1m";
 };
-
-int minuteByFreq(const char * freq, int time)
-    {
-        // 93143000 
-        if(freq[strlen(freq)-1] == 'm')
-        {
-            std::string temp  = freq;
-            auto n = std::atoi(temp.substr(0, strlen(freq)-1).c_str());
-            auto minute = ceil(time/ 100000.0 / n)*n;
-            return int(minute);
-        };
-        return 0;
-    }
 
 class Features
 {
 public:
-    virtual void onTrade(const Trade & trade)=0;
+    virtual void onTrade(Trade &trade) = 0;
     // virtual void onTick(const Tick & tick);
     // virtual void onOrder(const Order & order);
 
+    static size_t minuteByFreq(const char *freq, size_t time);
+    
 };
-
 
 typedef std::shared_ptr<EquityMinuteBar> EquityMinuteBarPtr;
 
-class EquityFeatures: public Features
+class EquityFeatures : public Features
 {
 public:
-    void onTrade(const Trade & trade) override;
+    void onTrade(Trade &trade) override;
     // void onTick(const Tick & tick);
     // void onOrder(const Order & order);
-    void setParams(FeatureParams & params)
+    std::vector<EquityMinuteBarPtr> getBars(std::string vt_symbol);
+    void setParams(FeatureParams &params)
     {
         _params = &params;
     };
-    EquityMinuteBarPtr findCurrBar(std::string vt_symbol, int min_num)
+
+    EquityMinuteBarPtr findCurrBar(std::string vt_symbol, size_t min_num)
     {
-        auto bar_map_idx =_currBars.find(vt_symbol);
-        if(bar_map_idx == _currBars.end()){
+        auto bar_map_idx = _currBars.find(vt_symbol);
+        if (bar_map_idx == _currBars.end())
+        {
             return NULL;
-        }else{
+        }
+        else
+        {
             auto bar_map = bar_map_idx->second;
-            auto idx  = bar_map.find(min_num);
-            if(idx == bar_map.end()){
+            auto idx = bar_map.find(min_num);
+            if (idx == bar_map.end())
+            {
                 return NULL;
-            }else{
+            }
+            else
+            {
                 return idx->second;
             }
         }
     }
+
 private:
     double _lastTradePrice = 0.;
-    int _lastTradeDirection = 1; // 1 for up, -1 for down
+    size_t _lastTradeDirection = 1; // 1 for up, -1 for down
     EquityMinuteBarPtr _preMBar = NULL;
-    FeatureParams* _params;
+    FeatureParams *_params;
     std::unordered_map<std::string, std::vector<EquityMinuteBarPtr>> _hisBars;
-    std::unordered_map<std::string, std::unordered_map<int, EquityMinuteBarPtr>> _currBars;
+    std::unordered_map<std::string, std::unordered_map<size_t, EquityMinuteBarPtr>> _currBars;
 };
