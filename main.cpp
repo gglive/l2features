@@ -81,10 +81,11 @@ void parseEquityTrade(CSVRow &row, EquityTrade &trade)
 
 int main()
 {
-    CSVReader reader("d:\\temp_data\\hq-szl2-300661-trade-20200731173248172.csv");
+    CSVReader reader("d:\\temp_data\\rq-szl2-000001-trade-20200720152226418.csv");
 
     EquityFeatures ef;
     FeatureParams fparams;
+    string vt_symbol = "000001.SZSE";
     fparams.freq = "1m";
     ef.setParams(fparams);
     int i = 0;
@@ -101,19 +102,26 @@ int main()
         parseEquityTrade(row, trade);
         if(trade.trade_volume!=0)
         {
+            //printf("|vt_symbol:%s|date:%zd|time:%zd|\n", trade.vt_symbol.c_str(),trade.date, trade.time);
             ef.onTrade(trade);
         }
         if(i%100 == 0){
-            auto vec = ef.getBars("300661.SZSE");
-            std::cout << vec.size()<< std::endl;
+            auto vec = ef.getBars(vt_symbol);
+            // std::cout << vec.size()<< std::endl;
             // std::cout << vec.back()->date<< std::endl;
+            if(vec.empty()){
+                continue;
+            }
             // auto bar = vec.back();
-            auto pt = vec.end()-1;
-            auto bar = *pt;
-            printf("|date: %zd|time: %zd|minute: %zd|UptickVolume:%d|DowntickVolume:%d|\n", bar->date, bar->time, bar->minute,bar->UptickVolume,bar->DowntickVolume);
+            // printf("|date: %zd|time: %zd|minute: %zd|UptickVolume:%zd|DowntickVolume:%zd|RepeatUptickVolume:%zd|RepeatDowntickVolume:%zd|total:%zd|\n",
+            //          bar->date, bar->time, bar->minute,bar->UptickVolume,bar->DowntickVolume, 
+            //          bar->RepeatUptickVolume,
+            //          bar->RepeatDowntickVolume,
+            //          bar->totalVolume
+            //          );
         }
     }
-    for(EquityMinuteBarPtr ptr: ef.getBars("300661.SZSE"))
+    for(EquityMinuteBarPtr ptr: ef.getBars(vt_symbol))
     {
         std::cout <<ptr->vt_symbol << ' ' << ptr->RepeatDowntickVolume << ' ' << std::endl;
     };

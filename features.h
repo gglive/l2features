@@ -40,6 +40,7 @@ struct EquityMinuteBar : Bar
 {
     size_t minute;
     // trade
+    size_t totalVolume = 0;
     size_t UptickVolume = 0;
     size_t DowntickVolume = 0;
     size_t RepeatUptickVolume = 0;
@@ -120,7 +121,7 @@ public:
 
 private:
     double _lastTradePrice = 0.;
-    size_t _lastTradeDirection = 1; // 1 for up, -1 for down
+    size_t _lastTradeDirection = 0; // 1 for up, -1 for down, 
     EquityMinuteBarPtr _preMBar = NULL;
     FeatureParams *_params;
     std::unordered_map<std::string, std::vector<EquityMinuteBarPtr>> _hisBars;
